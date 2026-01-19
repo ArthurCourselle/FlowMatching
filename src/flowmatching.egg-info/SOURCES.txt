@@ -12,4 +12,5 @@ src/models/nn.py
 src/models/unet.py
 src/scripts/plot.py
 src/scripts/train_model.py
+src/scripts/visualize_data.py
 src/utils/data.py
