@@ -36,7 +36,7 @@ def main():
         if args.data == "MNIST":
             # MNIST is 1x28x28
             in_channels = 1
-            image_size = 28
+            image_size = 32
         elif args.data == "CIFAR10":
             # CIFAR10 is 3x32x32
             in_channels = 3

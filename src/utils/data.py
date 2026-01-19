@@ -69,11 +69,11 @@ def get_data(type: Literal["2d", "CIFAR10", "MNIST"],
         return DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     
     elif type == "MNIST":
-         transform = transforms.Compose([
+         dataset = datasets.MNIST(root="./data", train=True, download=True, transform=transforms.Compose([
+            transforms.Resize(32),
             transforms.ToTensor(),
             transforms.Normalize((0.5,), (0.5,))
-        ])
-         dataset = datasets.MNIST(root="./data", train=True, download=True, transform=transform)
+        ]))
          return DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 
     else:

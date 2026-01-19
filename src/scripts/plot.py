@@ -32,8 +32,8 @@ def main():
     else:
         if args.data == "MNIST":
             in_channels = 1
-            image_size = 28
-            dim = (1, 28, 28)
+            image_size = 32
+            dim = (1, 32, 32)
         elif args.data == "CIFAR10":
             in_channels = 3
             image_size = 32
@@ -42,13 +42,14 @@ def main():
         model = UNetModel(
             image_size=image_size,
             in_channels=in_channels,
-            model_channels=32,
+            model_channels=64,
             out_channels=in_channels,
             num_res_blocks=2,
             attention_resolutions=(2,),
             dropout=0.1,
             channel_mult=(1, 2, 2, 2),
-            num_heads=4
+            num_heads=4,
+            num_classes=10
         ).to(device)
         model_name = f"model_{args.data}.pt"
 
