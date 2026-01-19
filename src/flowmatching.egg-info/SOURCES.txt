@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/solver.py
+src/train.py
+src/flowmatching.egg-info/PKG-INFO
+src/flowmatching.egg-info/SOURCES.txt
+src/flowmatching.egg-info/dependency_links.txt
+src/flowmatching.egg-info/requires.txt
+src/flowmatching.egg-info/top_level.txt
+src/models/mlp.py
+src/models/nn.py
+src/models/unet.py
+src/scripts/plot.py
+src/scripts/train_model.py
+src/utils/data.py
