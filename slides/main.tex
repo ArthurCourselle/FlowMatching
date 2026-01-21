@@ -19,19 +19,31 @@
 
 \begin{frame}{Generative Modeling: The Landscape}
     \begin{itemize}
-        \item \textbf{Goal}: Learn a distribution $p_{data}(x)$ from samples.
-        \item \textbf{Common Approaches}:
+        \item \textbf{Goal}: Learn $p_{data}(x)$ from samples.
+        \item \textbf{The Evolution}:
         \begin{itemize}
-            \item GANs: Adversarial training (often unstable).
-            \item VAEs: Lower bound optimization (often blurry).
-            \item \textbf{Diffusion Models}: SOTA quality, but slow sampling (SDE integration).
+            \item \textbf{GANs}: Adversarial (Unstable).
+            \item \textbf{VAEs}: Approximate (Blurry).
+            \item \textbf{Diffusion Models}: 
+            \begin{itemize}
+                \item High quality.
+                \item Slow sampling (many steps).
+                \item "Destruction" process (Noise).
+            \end{itemize}
         \end{itemize}
-        \item \textbf{The Solution}: \textbf{Flow Matching}.
-        \begin{itemize}
-            \item Deterministic Continuous Normalizing Flows (CNF).
-            \item Faster sampling (straight paths).
-            \item Simpler training (regression vs noise prediction).
-        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{The Diffusion Paradigm vs. Flow Matching}
+    \centering
+    \includegraphics[width=9cm]{imgs/diffusion-vs-flow.png}
+    
+    \vspace{0.3cm}
+
+    Both approaches try to map noise to data.
+    \begin{itemize}
+        \item Diffusion models do this with a "destructive" process: adding noise.
+        \item Flow Matching do this with a "constructive" process: learning the velocity field.
     \end{itemize}
 \end{frame}
 
@@ -41,37 +53,34 @@
         \textbf{The core idea:}
         \begin{itemize}
             \item Imagine moving points from a simple distribution (Noise) to a complex one (Data).
-            \item We define a \textbf{velocity field} $v_t(x)$ that guides this movement.
-            \item By following the arrows (solving the ODE), we generate data.
+            \item We define a \textbf{velocity field} $v_t(x)$ that pushes the points.
+            \item By following the arrows, we morph noise into data.
         \end{itemize}
         
         \column{0.5\textwidth}
         \centering
-        % Placeholder for TikZ or Image
-        \begin{tikzpicture}[scale=0.8]
-            \draw[->, thick] (-2,0) -- (2,0) node[right] {$x$};
-            \draw[->, thick] (0,-2) -- (0,2) node[above] {$y$};
-            \foreach \x in {-1.5,-0.5,0.5,1.5}
-                \foreach \y in {-1.5,-0.5,0.5,1.5}
-                    \draw[->, cyan, thick] (\x,\y) -- (\x+0.3,\y+0.2);
-            \node at (0,-2.5) {Vector Field $v_t$};
-        \end{tikzpicture}
+        \begin{center}
+            % \includegraphics[width=0.8\textwidth]{path/to/vector_field.png}
+            \vspace{4cm} % Placeholder
+            \textit{[Insert Image: Vector Field Intuition]}
+        \end{center}
     \end{columns}
 \end{frame}
 
 % Section 2: Mathematical Formalism
 \section{Mathematical Formalism}
 
-\begin{frame}{The Continuity Equation}
-    We want to transform a simple prior distribution $p_0$ (Noise) to a complex data distribution $p_1$ (Data).
+\begin{frame}{From Static to Dynamic: The Flow}
+    Instead of predicting noise (Diffusion), we predict \textbf{velocity}.
     
-    A time-dependent vector field $v_t: \R^d \to \R^d$ defines a flow $\phi_t$ via the ODE:
+    \begin{itemize}
+        \item Consider a probability density moving over time $p_t(x)$.
+        \item $t=0$: Noise $\mathcal{N}(0, I)$.
+        \item $t=1$: Data $p_{data}$.
+    \end{itemize}
+    
+    This movement allows us to define a \textbf{Flow} $\phi_t(x)$, which is the path of a particle $x$:
     $$ \frac{d}{dt}\phi_t(x) = v_t(\phi_t(x)) $$
-    
-    This generates a probability path $p_t$. For mass to be conserved, $p_t$ must satisfy the \textbf{Continuity Equation}:
-    $$ \frac{\partial p_t}{\partial t} + \nabla \cdot (p_t v_t) = 0 $$
-    
-    \textbf{Intuition}: The change in density at a point is equal to the net flow of mass into/out of that point.
 \end{frame}
 
 \begin{frame}{The Objective: Matching the Vector Field}
@@ -118,31 +127,6 @@
 % Section 3: Implementation
 \section{Implementation}
 
-\begin{frame}[fragile]{Training Algorithm}
-    \begin{enumerate}
-        \item Sample data $x_1 \sim p_{data}$ and noise $x_0 \sim \mathcal{N}(0, I)$.
-        \item Sample time $t \sim \mathcal{U}[0, 1]$.
-        \item Interpolate: $x_t = (1-t)x_0 + t x_1$.
-        \item Compute target velocity: $u_t = x_1 - x_0$.
-        \item Minimize MSE: $|| v_\theta(x_t, t) - u_t ||^2$.
-    \end{enumerate}
-\end{frame}
-
-\begin{frame}{Model Architecture: MLP}
-    We used a straightforward MLP, but the \textbf{conditioning on time} $t$ is critical.
-    
-    \textbf{Architecture details}:
-    \begin{itemize}
-        \item \textbf{Input}: $x \in \R^2$ concatenated with Time Embedding $emb(t) \in \R^{32}$.
-        \item \textbf{Backbone}: 3 $\times$ Linear(128) $\to$ SiLU.
-        \item \textbf{Output}: $\hat{v} \in \R^2$.
-    \end{itemize}
-    
-    \textbf{Time Embeddings}:
-    Standard sinusoidal embeddings (Vaswani et al.) allow the network to distinguish $t=0.1$ (high noise) from $t=0.9$ (fine detail) effectively.
-    $$ emb(t)_i = \sin(t \cdot \omega_i) \quad \text{or} \quad \cos(t \cdot \omega_i) $$
-\end{frame}
-
 \begin{frame}[fragile]{Sampling: Solving the ODE}
     \begin{columns}
         \column{0.5\textwidth}
@@ -178,43 +162,60 @@ return x
 \begin{frame}{Qualitative Results}
     \begin{center}
         \includegraphics[width=0.45\textwidth]{imgs/reconstruction_plot.png}
-        \caption{Transformation from Noise (Left) to Data (Right)}
     \end{center}
     \begin{itemize}
         \item The model successfully learned the distribution.
-        \item Trajectories are straight lines (Optimal Transport).
+        \item Trajectories are straight lines with Optimal Transport.
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Vector Field Visualisation}
-     \begin{center}
-        \includegraphics[width=0.6\textwidth]{imgs/reconstruction_MNIST_.png} 
-        \footnote{Note: Assuming this image shows more complex data or vector fields.}
+\begin{frame}{Qualitative Results: CIFAR-10}
+    \begin{center}
+        \includegraphics[width=0.7\textwidth]{imgs/reconstruction_CIFAR10_.png}
     \end{center}
-    The vector field is smooth and points directly towards the data modes.
+    \begin{itemize}
+        \item Scaling to high-dimensional data using a \textbf{U-Net} backbone.
+        \item The model generates sharp samples by following the learned velocity field.
+    \end{itemize}
 \end{frame}
 
 \section{Comparison \& Conclusion}
 
 \begin{frame}{Flow Matching vs RealNVP}
-    \begin{table}[]
-        \begin{tabular}{@{}lll@{}}
-            \toprule
-            Feature & RealNVP (Discrete Flow) & Flow Matching (Continuous) \\ \midrule
-            \textbf{Architecture} & Constrained (Invertible) & Free-form MLP \\
-            \textbf{Training} & Exact Likelihood (NLL) & Vector Regression (MSE) \\
-            \textbf{Sampling} & 1 pass (Fast) & ODE Solve (Iterative, but fast w/ OT) \\
-            \textbf{Expressivity} & Limited by coupling & Universal Approximator \\ \bottomrule
-        \end{tabular}
-    \end{table}
-    \textbf{Conclusion}: Flow Matching creates higher quality samples with simpler training dynamics, at the cost of iterative sampling.
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \begin{block}{RealNVP (Discrete Flow)}
+            \begin{itemize}
+                \item \textbf{Arch}: Constrained (Invertible).
+                \item \textbf{Train}: Exact Likelihood (NLL).
+                \item \textbf{Sample}: 1 pass (Fast).
+                \item \textbf{Power}: Limited expressivity.
+            \end{itemize}
+        \end{block}
+
+        \column{0.48\textwidth}
+        \begin{block}{Flow Matching (Continuous)}
+            \begin{itemize}
+                \item \textbf{Arch}: Free-form MLP.
+                \item \textbf{Train}: Vector Regression (MSE).
+                \item \textbf{Sample}: ODE Solve (Iterative).
+                \item \textbf{Power}: Universal Approximator.
+            \end{itemize}
+        \end{block}
+    \end{columns}
+    
+    \vspace{0.5cm}
+    \centering
+    \textbf{Conclusion}: Flow Matching $\to$ Higher quality \& Simpler training.
 \end{frame}
 
 \begin{frame}
     \centering
     \Huge Thank You!
     \vspace{1cm}
-    \large Questions?
+    
+    \normalsize
+    \textit{Code available at: https://github.com/ArthurCourselle/FlowMatching}
 \end{frame}
 
 \end{document}
