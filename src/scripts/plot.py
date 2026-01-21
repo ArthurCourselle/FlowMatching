@@ -34,6 +34,12 @@ def main():
         default=None,
         help="Class label for conditional generation",
     )
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        default=None,
+        help="Path to the trained model checkpoint",
+    )
     args = parser.parse_args()
 
     print(f"Setting up plotting for {args.data}...")
@@ -43,10 +49,9 @@ def main():
         device = "mps"
     print(f"Using device: {device}")
 
-    # Load Model
     if args.data == "2d":
         model = MLP(input_dim=2, hidden_dim=64, time_dim=32).to(device)
-        model_name = f"model_2d_{args.subtype}.pt"
+        # model_name = f"model_2d_{args.subtype}.pt"
         dim = 2
     else:
         if args.data == "MNIST":
@@ -70,11 +75,13 @@ def main():
             num_heads=4,
             num_classes=10,
         ).to(device)
-        model_name = f"model_{args.data}_200ep.pt"
+        # model_name = f"model_{args.data}_500ep.pt"
 
-    checkpoint_path = os.path.join("./checkpoints", model_name)
+    checkpoint_path = os.path.join("./checkpoints", args.model_path)
     try:
-        model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+        model.load_state_dict(
+            torch.load(checkpoint_path, map_location=device)["model_state_dict"]
+        )
         print(f"Model loaded from {checkpoint_path}")
     except FileNotFoundError:
         print(
@@ -82,13 +89,12 @@ def main():
         )
         return
 
-    # Generate Trajectory
     print("Generating samples...")
-    steps = 10000
+    steps = 1000
     # For images, we don't need too many samples to visualize, but for 2D density we do.
     n_samples = args.n_samples
     if args.data != "2d":
-        n_samples = min(n_samples, 64)  # Limit image samples for grid
+        n_samples = min(n_samples, 64)
 
     y = None
     if args.class_label is not None:
@@ -119,7 +125,6 @@ def main():
             ax.set_ylim(-4, 4)
             ax.axis("off")
     else:
-        # Plotting images
         fig, axes = plt.subplots(2, 5, figsize=(20, 8))
         axes = axes.flatten()
         for i, ax in enumerate(axes):
@@ -130,8 +135,8 @@ def main():
             imgs = selected_frames[i]
 
             # Normalize to [0, 1] for plotting if needed or assuming they are roughly consistent
-            # Our data was normalized to [-1, 1] (CIFAR) or similar.
-            # Let's unnormalize roughly for display: x * 0.5 + 0.5
+            # The data was normalized to [-1, 1] (CIFAR).
+            # Unnormalize for display: x * 0.5 + 0.5
             if args.data == "CIFAR10":
                 imgs = imgs * 0.5 + 0.5
             elif args.data == "MNIST":
@@ -139,9 +144,7 @@ def main():
 
             imgs = torch.clamp(imgs, 0, 1)
 
-            grid = make_grid(imgs[:64], nrow=8)  # Make a grid of up to 64 images
-
-            # Helper to show image
+            grid = make_grid(imgs[:64], nrow=8)
             grid_np = grid.permute(1, 2, 0).numpy()
 
             ax.imshow(grid_np, cmap="gray" if args.data == "MNIST" else None)
