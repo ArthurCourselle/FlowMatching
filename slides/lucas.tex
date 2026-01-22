@@ -1,0 +1,21 @@
+\begin{frame}{Flow Matching Training Loop}
+    \small
+    \textbf{Algorithm}
+    \begin{enumerate}
+        \item Sample a minibatch $x_1 \sim p_{\text{data}}$
+        \item Sample noise $x_0 \sim \mathcal{N}(0,I)$ and time $t \sim \mathcal{U}[0,1]$
+        \item Interpolate:
+        \[
+            x_t = (1 - t)x_0 + t x_1
+        \]
+        \item Compute target vector field:
+        \[
+            u_t = x_1 - x_0
+        \]
+        \item Predict vector field  $\hat{u}_t = v_\theta(x_t,t)$
+        \item Calculate $MSE(\hat{u}_t, u_t)$
+        \item Backpropagate and optimize model
+    \end{enumerate}
+    \end{frame}
+    
+    

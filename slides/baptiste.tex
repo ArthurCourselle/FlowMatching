@@ -1,0 +1,40 @@
+\section{Expérimentations \& Comparaisons}
+
+\begin{frame}{Comparaison}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{RealNVP (Baseline)}
+        \begin{itemize}
+            \item \textbf{Inférence :} Très Rapide ($O(K)$ couches)
+            \item \textbf{Entraînement :} Plus complexe
+            \begin{itemize}
+                \item NLL
+                \item Inversibilité
+            \end{itemize}
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Flow Matching (Notre Approche)}
+        \begin{itemize}
+            \item \textbf{Inférence :} Plus Lente (ODE Solver)
+            \item \textbf{Entraînement :} Simple \& Stable
+            \begin{itemize}
+                \item Convergence plus rapide
+            \end{itemize}
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Synthèse des Performances}
+    \begin{table}[]
+        \centering
+        \begin{tabular}{@{}lcc@{}}
+        \toprule
+        \textbf{Critère} & \textbf{RealNVP} & \textbf{Flow Matching} \\ \midrule
+        Vitesse d'Inférence & \textcolor{green}{\textbf{Instantanée}} & \textcolor{red}{Lente} \\
+        Complexité Entraînement & \textcolor{red}{Élevée} & \textcolor{green}{\textbf{Faible (Régression)}} \\
+        Stabilité Convergence & Moins stable & \textcolor{green}{\textbf{Très stable}} \\ \bottomrule
+        \end{tabular}
+        \caption{Tableau récapitulatif des avantages et inconvénients.}
+    \end{table}
+\end{frame}

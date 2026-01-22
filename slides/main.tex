@@ -179,35 +179,7 @@ return x
     \end{itemize}
 \end{frame}
 
-\section{Comparison \& Conclusion}
-
-\begin{frame}{Flow Matching vs RealNVP}
-    \begin{columns}[T]
-        \column{0.48\textwidth}
-        \begin{block}{RealNVP (Discrete Flow)}
-            \begin{itemize}
-                \item \textbf{Arch}: Constrained (Invertible).
-                \item \textbf{Train}: Exact Likelihood (NLL).
-                \item \textbf{Sample}: 1 pass (Fast).
-                \item \textbf{Power}: Limited expressivity.
-            \end{itemize}
-        \end{block}
-
-        \column{0.48\textwidth}
-        \begin{block}{Flow Matching (Continuous)}
-            \begin{itemize}
-                \item \textbf{Arch}: Free-form MLP.
-                \item \textbf{Train}: Vector Regression (MSE).
-                \item \textbf{Sample}: ODE Solve (Iterative).
-                \item \textbf{Power}: Universal Approximator.
-            \end{itemize}
-        \end{block}
-    \end{columns}
-    
-    \vspace{0.5cm}
-    \centering
-    \textbf{Conclusion}: Flow Matching $\to$ Higher quality \& Simpler training.
-\end{frame}
+\input{baptiste.tex}
 
 \begin{frame}
     \centering
