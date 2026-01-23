@@ -25,13 +25,16 @@
             \fill[red] (0.5, 0.5) circle (3pt) node[below] {$x_0$};
             \fill[blue] (2.5, 2.5) circle (3pt) node[above] {$x_1$};
             
-            % Line
-            \draw[thick, ->, >=stealth] (0.5, 0.5) -- (2.5, 2.5) node[midway, above left] {\small Straight Path};
+            % Diffusion models (dashed curve)
+            \draw[dashed, gray, thick] (0.5, 0.5) to[out=45, in=135] (1.5, 1.8) to[out=315, in=225] (2.5, 2.5) node[midway, right] {\small Diffusion};
+            
+            % Flow matching (solid line)
+            \draw[thick, ->, >=stealth] (0.5, 0.5) -- (2.5, 2.5) node[midway, above left] {};
             
             % Time label
             \node at (1.5, 1.2) {\small $t \in [0, 1]$};
         \end{tikzpicture}
-    \end{columns}
+        \end{columns}
 \end{frame}
 
 \begin{frame}{The Regression Target}
