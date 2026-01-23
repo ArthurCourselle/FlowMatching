@@ -1,0 +1,90 @@
+\begin{frame}{Flow Matching}
+Let $x_1 \sim q(x_1)$ from which we only have access to data samples.\\
+
+Let $p_t$ be a probability path such that $p_0=p$ is a the standard normal distribution $p(x) = \mathcal{N}(x | 0, I)$, and $p_1(x) \approx q(x)$.
+
+\begin{block}{Flow Matching (FM) objective}
+\begin{equation}
+    \mathcal{L}_{\text{FM}}(\theta) = \mathbb{E}_{t \sim \mathcal{U}[0,1],x\sim p_t(x)}\| v_t(x)-u_t(x) \|^2
+\end{equation}
+$\theta$ : the learnable parameters of $v_t$.
+\end{block}
+\end{frame}
+
+\begin{frame}{Conditional Flow Matching}
+Let $p_t(x|x_1)$ such that $p_0(x|x_1) = p(x)$ and $p_1(x|x_1) = \mathcal{N}(x | x_1, \sigma^2I)$. \\
+\hspace{1cm}
+
+The marginal probability $p_t(x)$ is given by \boxed{$p_t(x) = \int p_t(x|x_1) q(x_1) dx_1$}. \\
+\hspace{1cm}
+
+To find $u_t(x)$, we derive $p_t(x)$ with respect to $t$ and apply the continuity equation ($\frac{\partial p_t(x)}{\partial t} + \nabla \cdot \left[ u_t(x) p_t(x) \right] = 0$):
+\begin{align}
+\frac{\partial p_t(x)}{\partial t} &= \int \frac{\partial p_t(x|x_1)}{\partial t} q(x_1) \, dx_1 \\
+&= -\nabla \cdot \left[ \int u_t(x|x_1) p_t(x|x_1) q(x_1) \, dx_1 \right] \\
+u_t(x) p_t(x) &= \int u_t(x|x_1) p_t(x|x_1) q(x_1) \, dx_1 \\
+u_t(x) &= \int u_t(x|x_1) \frac{p_t(x|x_1) q(x_1)}{p_t(x)} \, dx_1
+\end{align}
+\end{frame}
+
+\begin{frame}{Conditional Flow Matching}
+\begin{align}
+    \mathcal{L}_{\text{FM}}(\theta) &= \mathbb{E}_{t \sim \mathcal{U}[0,1],x\sim p_t(x)}\| v_t(x)-u_t(x) \|^2 \\
+    &= \mathbb{E}_{t \sim \mathcal{U}[0,1],x\sim p_t(x)}\left[ \|v_t(x)\|^2 - 2.v_t(x).u_t(x) + \|u_t(x)\|^2 \right] \\
+\end{align}
+
+We focus on the term $\mathbb{E}_{t \sim \mathcal{U}[0,1],x\sim p_t(x)}\left[ \|2.v_t(x).u_t(x) \right]$ : \\
+\begin{align}
+    \mathbb{E}_{t \sim \mathcal{U}[0,1],x\sim p_t(x)}\left[ \|2.v_t(x).u_t(x) \right] &= 2 \int{v_t(x).u_t(x).p_t(x)dx} \\
+    &= 2 \int{v_t(x). \frac{\int u_t(x|x_1) p_t(x|x_1) q(x_1)dx_1}{p_t(x)} .p_t(x)dx} \\
+    &= 2 \int{\int v_t(x).u_t(x|x_1) p_t(x|x_1) q(x_1)dx_1dx} \\
+    &= 2 . \mathbb{E}_{x \sim p_t(x|x_1), x_1 \sim q(x_1)}\left[ \ v_t(x).u_t(x|x_1) \right] \\
+\end{align}
+\end{frame}
+
+\begin{frame}{Conditional Flow Matching}
+\small
+\begin{align}
+    \mathcal{L}_{\text{FM}}(\theta) &= \mathbb{E}_{t \sim \mathcal{U}[0,1],x\sim p_t(x)}\left[ \|v_t(x)\|^2 - 2.v_t(x).u_t(x) + \|u_t(x)\|^2 \right] \\
+    &= \mathbb{E}_{x\sim p_t(x|x_1), x_1 \sim q(x_1)}\left[ \|v_t(x)\|^2 - 2.v_t(x).u_t(x|x_1) + \|u_t(x|x_1)\|^2 + \|u_t(x)\|^2  - \|u_t(x|x_1)\|^2 \right] \\
+    &= \mathbb{E}_{x\sim p_t(x|x_1), x_1 \sim q(x_1)}\left[ \|v_t(x) - u_t(x|x_1)\|^2 + \|u_t(x)\|^2  - \|u_t(x|x_1)\|^2 \right] \\
+\end{align}
+
+Since $u_t(\dot)$ does not have any impact on the weights, we can rewrite the FM objective as :
+\begin{block}{Conditional Flow Matching (CFM) objective}
+\begin{align}
+    \mathcal{L}_{\text{CFM}}(\theta) &= \mathbb{E}_{x\sim p_t(x|x_1), x_1 \sim q(x_1)}\left[ \|v_t(x) - u_t(x|x_1)\|^2 \right]
+\end{align}
+\end{block}
+\end{frame}
+
+
+\begin{frame}{Optimal Transport}
+We consider the flow : $\psi_t(x_0) = \sigma_t(x_1)x_0 + \mu_t(x_1)$ with $u_t(x_1) = tx_1$ and $\sigma_t(x_1) = 1 - t$.
+
+\hspace{1cm}
+
+We differentiate : 
+\begin{align}
+    \frac{\partial}{\partial t} \psi_t(x_0) &= \frac{\partial}{\partial t} ((1-t)x_0 + tx_1) \\
+    &= \frac{\partial}{\partial t} (x_0 - tx_0 + tx_1)\\
+    &= \boxed{x_1 - x_0}\\
+\end{align}
+\end{frame}
+
+\begin{frame}{Optimal Transport}
+
+We recall : $\frac{\partial}{\partial t} \psi_t(x_0) = u(\psi_t(x_0) | x_1)$ \\
+
+\hspace{1cm}
+
+We can now rewrite the objective as :
+
+\begin{block}{Optimal Transport objective}
+\begin{align}
+    \mathcal{L}_{\text{OT}}(\theta) &= \mathbb{E}_{x_0\sim p_0(x_0), x_1 \sim q(x_1)}\left[ \|v_t(\psi_t(x_0)) - (x_1 - x_0) \|^2 \right]
+\end{align}
+\end{block}
+
+We then just need to train a neural network $v_\theta(x, t)$ to approximate the target vector field.
+\end{frame}
