@@ -1,38 +1,38 @@
-\begin{frame}{Comparaison}
+\begin{frame}{Comparison}
     \begin{columns}
         \column{0.5\textwidth}
         \textbf{RealNVP (Baseline)}
         \begin{itemize}
-            \item \textbf{Inférence :} Très Rapide ($O(K)$ couches)
-            \item \textbf{Entraînement :} Plus complexe
+            \item \textbf{Inference:} Very Fast ($O(K)$ layers)
+            \item \textbf{Training:} More Complex
             \begin{itemize}
                 \item NLL
-                \item Inversibilité
+                \item Invertibility
             \end{itemize}
         \end{itemize}
 
         \column{0.5\textwidth}
-        \textbf{Flow Matching (Notre Approche)}
+        \textbf{Flow Matching (Our Approach)}
         \begin{itemize}
-            \item \textbf{Inférence :} Plus Lente (ODE Solver)
-            \item \textbf{Entraînement :} Simple \& Stable
+            \item \textbf{Inference:} Slower (ODE Solver)
+            \item \textbf{Training:} Simple \& Stable
             \begin{itemize}
-                \item Convergence plus rapide
+                \item Faster Convergence
             \end{itemize}
         \end{itemize}
     \end{columns}
 \end{frame}
 
-\begin{frame}{Synthèse des Performances}
+\begin{frame}{Performance Summary}
     \begin{table}[]
         \centering
         \begin{tabular}{@{}lcc@{}}
         \toprule
-        \textbf{Critère} & \textbf{RealNVP} & \textbf{Flow Matching} \\ \midrule
-        Vitesse d'Inférence & \textcolor{green}{\textbf{Instantanée}} & \textcolor{red}{Lente} \\
-        Complexité Entraînement & \textcolor{red}{Élevée} & \textcolor{green}{\textbf{Faible (Régression)}} \\
-        Stabilité Convergence & Moins stable & \textcolor{green}{\textbf{Très stable}} \\ \bottomrule
+        \textbf{Criteria} & \textbf{RealNVP} & \textbf{Flow Matching} \\ \midrule
+        Inference Speed & \textcolor{green}{\textbf{Instantaneous}} & \textcolor{red}{Slow} \\
+        Training Complexity & \textcolor{red}{High} & \textcolor{green}{\textbf{Low (Regression)}} \\
+        Convergence Stability & Less stable & \textcolor{green}{\textbf{Very stable}} \\ \bottomrule
         \end{tabular}
-        \caption{Tableau récapitulatif des avantages et inconvénients.}
+        \caption{Summary table of advantages and disadvantages.}
     \end{table}
 \end{frame}
