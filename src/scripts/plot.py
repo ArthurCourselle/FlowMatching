@@ -90,7 +90,8 @@ def main():
         return
 
     print("Generating samples...")
-    steps = 1000
+    # steps = 100
+    steps = 10
     # For images, we don't need too many samples to visualize, but for 2D density we do.
     n_samples = args.n_samples
     if args.data != "2d":

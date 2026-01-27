@@ -1,0 +1,6 @@
+\beamer@sectionintoc {1}{Introduction \& Baseline}{3}{0}{1}
+\beamer@sectionintoc {2}{Flows Normalisants Continus}{3}{0}{2}
+\beamer@sectionintoc {3}{Théorie du Flow Matching}{3}{0}{3}
+\beamer@sectionintoc {4}{Implémentation: Optimal Transport \& Sampling}{9}{0}{4}
+\beamer@sectionintoc {5}{Implémentation: Code \& Architecture}{12}{0}{5}
+\beamer@sectionintoc {6}{Résultats \& Comparaison}{12}{0}{6}
