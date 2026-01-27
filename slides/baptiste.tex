@@ -1,0 +1,42 @@
+\begin{frame}{Comparison}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{RealNVP (Baseline)}
+        \begin{itemize}
+            \item \textbf{Inference:} Very Fast ($O(K)$ layers)
+            \item \textbf{Training:} More Complex
+            \begin{itemize}
+                \item NLL
+                \item Invertibility
+            \end{itemize}
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Flow Matching (Our Approach)}
+        \begin{itemize}
+            \item \textbf{Inference:} Slower (ODE Solver)
+            \item \textbf{Training:} Simple \& Stable
+            \begin{itemize}
+                \item Faster Convergence
+            \end{itemize}
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Performance Summary}
+    \begin{table}[]
+        \centering
+        \begin{tabular}{@{}lcc@{}}
+        \toprule
+        \textbf{Criteria} & \textbf{RealNVP} & \textbf{Flow Matching} \\ \midrule
+        Inference Speed & \textcolor{green}{\textbf{Instantaneous}} & \textcolor{red}{Slow} \\
+        Training Complexity & \textcolor{red}{High} & \textcolor{green}{\textbf{Low (Regression)}} \\
+        Convergence Stability & Less stable & \textcolor{green}{\textbf{Very stable}} \\ \bottomrule
+        \end{tabular}
+        \caption{Summary table of advantages and disadvantages.}
+    \end{table}
+    
+    \begin{center}
+        \includegraphics[width=0.8\textwidth]{imgs/result.png}
+    \end{center}
+\end{frame}
