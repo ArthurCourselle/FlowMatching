@@ -2,3 +2,11 @@ data/
 src/trash
 __pycache__
 *.pt
+*.egg-info
+*.aux
+*.out
+*.log
+*.nav
+*.pdf
+*.snm
+*.toc
