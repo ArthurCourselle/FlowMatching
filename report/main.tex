@@ -1,0 +1,220 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Flow Matching for Generative Modeling: \\ A comprehensive study on simulation-free training of Continuous Normalizing Flows}
+\author{Lucas Duport}
+\date{January 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Generative modeling has seen a paradigm shift with the advent of Continuous Normalizing Flows (CNFs) and Diffusion Models. While CNFs offer attractive properties such as exact log-likelihood computation and invertibility, their training has traditionally been bottlenecked by the computational cost of simulating Ordinary Differential Equations (ODEs) at every training step. Flow Matching (FM) introduces a novel simulation-free training objective that regresses vector fields directly, bypassing the need for expensive ODE integration during the learning phase. This report presents a comprehensive analysis of the Flow Matching framework, with a specific focus on Conditional Flow Matching (CFM) and Optimal Transport (OT) probability paths. We delve into the mathematical foundations that bridge discrete and continuous flows, derive the FM and CFM objectives, and demonstrate the efficacy of the method through a detailed implementation on the 2D Checkerboard dataset. Our results confirms that Optimal Transport paths lead to straighter trajectories and more efficient sampling compared to standard diffusion paths.
+\end{abstract}
+
+\section{Introduction}
+
+The field of deep generative modeling has evolved rapidly over the last decade, driven by the quest to model complex, high-dimensional data distributions $q(x)$. From the adversarial games of Generative Adversarial Networks (GANs) to the probabilistic foundations of Variational Autoencoders (VAEs), each method has contributed to our understanding of manifold learning. Among these, Normalizing Flows have stood out for their ability to provide an exact likelihood and a bijective mapping between the data distribution and a simple prior, typically a Gaussian.
+
+\subsection{The Evolution of Flows}
+Normalizing Flows operate on the principle of change of variables. By applying a sequence of invertible transformations, a simple base distribution is morphed into a complex target distribution. \textbf{Discrete Normalizing Flows}, exemplified by architectures like RealNVP and Glow, construct these transformations using discrete layers (e.g., affine coupling layers) designed to have tractable Jacobian determinants. While successful, these architectures are often constrained by topological limitations and the specific structural requirements of the layers.
+
+\subsection{The Continuous Paradigm and its Bottlenecks}
+To overcome the limitations of discrete layers, the community moved towards \textbf{Continuous Normalizing Flows (CNFs)}. Instead of discrete steps, CNFs define the transformation as the solution to an Ordinary Differential Equation (ODE) $\frac{dx}{dt} = v_t(x)$ over a time interval $t \in [0, 1]$. The instantaneous change of variables formula allows for likelihood estimation using the trace of the Jacobian of the vector field $v_t$.
+
+However, training CNFs has historically been computationally expensive. The standard approach involves the adjoint sensitivity method, which requires solving the ODE forward and backward in time to compute gradients. This iterative numerical integration during training leads to slow convergence and poor scalability, limiting the application of CNFs to relatively simple datasets compared to the successes of Diffusion Models.
+
+\subsection{Flow Matching: A New Direction}
+This report explores \textbf{Flow Matching (FM)}, a groundbreaking method proposed by Lipman et al. (2023) that resolves the training bottleneck of CNFs. The core insight of Flow Matching is to shift the learning objective from maximizing likelihood (which requires ODE simulation) to directly regressing the vector field $v_t(x)$. By defining a target probability path $p_t$ that interpolates between noise and data, FM allows the model to "match" the desired vector field $u_t$ that generates this path.
+
+Crucially, the marginal vector field $u_t$ is generally intractable. The FM framework circumvents this via \textbf{Conditional Flow Matching (CFM)}, which effectively allows the model to learn the intractable marginal field by regressing tractable conditional vector fields $u_t(x|x_1)$ defined per data point. This "simulation-free" training paradigm significantly accelerates convergence.
+
+\subsection{Report Contributions}
+In this work, we implement and analyze the Flow Matching method with a focus on:
+\begin{itemize}
+    \item \textbf{Theoretical Derivation}: We re-derive the connection between the Flow Matching objective and the Conditional Flow Matching objective, explaining why they share the same gradients.
+    \item \textbf{Optimal Transport}: We verify the advantages of using Optimal Transport (OT) displacement maps, which induce straight-line probability paths practical for efficient sampling.
+    \item \textbf{Experimental Validation}: We provide a full implementation of OT-CFM using a time-dependent Multi-Layer Perceptron (MLP) on the non-trivial 2D Checkerboard dataset. We analyze the training loss dynamics and the quality of generated samples using Euler integration.
+\end{itemize}
+
+The remainder of this report is structured as follows: Section 2 provides the necessary background on discrete flows and the transition to continuous time. Section 3 details the Flow Matching theory. Section 4 describes our implementation methodology. Section 5 presents the experimental results, followed by a discussion in Section 6 and conclusions in Section 7.
+
+\section{Background: From Discrete to Continuous}
+\label{sec:background}
+
+Before delving into Flow Matching, it is essential to understand the trajectory of flow-based models.
+
+\subsection{Discrete Normalizing Flows}
+A normalizing flow is a transformation $f: \mathbb{R}^d \to \mathbb{R}^d$ that maps a random variable $z \sim p(z)$ (the prior) to $x = f(z) \sim q(x)$ (the data). If $f$ is invertible and differentiable, the change of variables formula gives the log-likelihood:
+\begin{equation}
+    \log q(x) = \log p(f^{-1}(x)) + \log \left| \det \frac{\partial f^{-1}}{\partial x} \right|
+\end{equation}
+Architectures like \textbf{RealNVP} (Real Non-Volume Preserving) use coupling layers to ensure the determinant is easy to compute (triangular Jacobian). However, constructing expressive flows from discrete compositions remains a challenge of architectural engineering.
+
+\subsection{Continuous Normalizing Flows (CNFs)}
+CNFs generalize this concept by taking the limit of infinite discrete steps. The flow $\phi_t(x)$ is defined by an ODE:
+\begin{equation}
+    \frac{d}{dt}\phi_t(x) = v_t(\phi_t(x))
+\end{equation}
+where $v_t$ is a time-dependent vector field. The change in log-density follows the instantaneous change of variables formula:
+\begin{equation}
+    \frac{\partial \log p_t(x)}{\partial t} = -\text{Tr}\left( \frac{\partial v_t}{\partial x} \right)
+\end{equation}
+This formulation is theoretically elegant but practically cumbersome due to the ODE solver requirement in the training loop. Flow Matching aims to keep this continuous formulation while discarding the expensive training procedure.
+
+\section{Theoretical Framework: Flow Matching}
+\label{sec:theory}
+
+The core idea of Flow Matching is to enable simulation-free training of CNFs. This is achieved by defining a target probability density path and regressing a vector field to match the direction of this path.
+
+\subsection{Probability Paths and Vector Fields}
+Let $p_0(x)$ be a simple prior distribution, such as the standard normal $\mathcal{N}(0, I)$, and $q(x)$ be the complex data distribution we wish to model. A \textbf{probability path} is a time-dependent probability density function $p_t(x)$ for $t \in [0, 1]$ such that $p_0(x) = p(x)$ (the prior) and $p_1(x) \approx q(x)$.
+
+This probability path is generated by a time-dependent vector field $v_t: [0, 1] \times \mathbb{R}^d \to \mathbb{R}^d$. The flow $\phi_t(x)$ associated with $v_t$ satisfies the continuity equation:
+\begin{equation}
+    \frac{\partial p_t(x)}{\partial t} + \nabla \cdot (p_t(x) v_t(x)) = 0
+\end{equation}
+In the Flow Matching framework, we define a target vector field $u_t(x)$ that generates the desired path $p_t$. Our goal is to train a neural network $v_t(x; \theta)$ to approximate $u_t(x)$.
+
+\subsection{Flow Matching Objective}
+The naive Flow Matching objective is to minimize the expected squared difference between the model vector field and the target vector field:
+\begin{equation}
+    \mathcal{L}_{FM}(\theta) = \mathbb{E}_{t \sim \mathcal{U}[0, 1], x \sim p_t(x)} \| v_t(x; \theta) - u_t(x) \|^2
+\end{equation}
+However, computing $u_t(x)$ and sampling from the marginal $p_t(x)$ is generally intractable because we do not know the path between the prior and the data distribution explicitly.
+
+\subsection{Conditional Flow Matching (CFM)}
+To solve the tractability issue, Lipman et al. introduced \textbf{Conditional Flow Matching}. Instead of defining the path for the entire distribution directly, we define it conditionally on a single data sample $x_1 \sim q(x_1)$.
+
+Let $p_t(x | x_1)$ be a \textbf{conditional probability path} connecting the prior $p(x)$ to a specific data point $x_1$. For example, a Gaussian path centered at a linear interpolation between noise and data. Let $u_t(x | x_1)$ be the vector field generating this conditional path.
+
+The marginal probability path is defined as the expectation over the data distribution:
+\begin{equation}
+    p_t(x) = \int p_t(x | x_1) q(x_1) dx_1
+\end{equation}
+Remarkably, the authors prove that regressing the conditional vector field is equivalent to regressing the marginal vector field (up to a constant independent of $\theta$). The \textbf{Conditional Flow Matching objective} is:
+\begin{equation}
+    \mathcal{L}_{CFM}(\theta) = \mathbb{E}_{t \sim \mathcal{U}[0, 1], x_1 \sim q(x_1), x \sim p_t(x | x_1)} \| v_t(x; \theta) - u_t(x | x_1) \|^2
+\end{equation}
+This objective is fully tractable. We can sample a data point $x_1$, a time $t$, and a point $x$ from the conditional path $p_t(x|x_1)$, then compute the conditional vector field $u_t(x|x_1)$ explicitly.
+
+\subsection{Optimal Transport (OT) Paths}
+While various conditional paths can be chosen (e.g., Diffusion paths), \textbf{Optimal Transport} paths are particularly desirable because they correspond to straight trajectories, which are easiest for ODE solvers to integrate.
+
+The OT displacement map between a noise sample $x_0 \sim \mathcal{N}(0, I)$ and a data sample $x_1$ is defined as linear interpolation:
+\begin{equation}
+    x_t = \psi_t(x_0) = (1 - t)x_0 + t x_1
+\end{equation}
+Differentiating with respect to $t$, we find the conditional vector field $u_t(x | x_1)$ is constant in time:
+\begin{equation}
+    u_t(x_t | x_1) = \frac{d}{dt} ((1 - t)x_0 + t x_1) = x_1 - x_0
+\end{equation}
+This simple, constant vector field implies that particles move in straight lines at constant velocity from noise to data. The resulting objective becomes:
+\begin{equation}
+    \mathcal{L}_{OT-CFM}(\theta) = \mathbb{E}_{t, x_0, x_1} \| v_t(\psi_t(x_0); \theta) - (x_1 - x_0) \|^2
+\end{equation}
+
+\section{Methodology and Implementation}
+\label{sec:method}
+
+We implemented the Optimal Transport Conditional Flow Matching (OT-CFM) algorithm to model a 2D Checkerboard distribution.
+
+\subsection{Dataset Generation}
+The dataset consists of points sampled from a 2D checkerboard pattern. The data generation process involves:
+\begin{enumerate}
+    \item Sampling 2D uniform coordinates.
+    \item Creating a checkerboard mask based on the floor of the coordinates.
+    \item Assigning points to the white or black squares accordingly.
+    \item Normalizing the data to be centered and scaled, aiding the stability of neural network training.
+\end{enumerate}
+We generated $N=10,000$ samples for training.
+
+\subsection{Model Architecture}
+We employed a Multi-Layer Perceptron (MLP) to model the time-dependent vector field $v_t(x)$.
+\begin{itemize}
+    \item \textbf{Input}: Concatenation of the 2D spatial coordinate $x$ and a time embedding of $t$.
+    \item \textbf{Time Embedding}: To ensure the network effectively utilizes the time information, we used sinusoidal time embeddings (similar to positional encodings in Transformers):
+    \begin{equation}
+        \text{Emb}(t)_k = \sin(t \cdot \omega_k) \quad \text{or} \quad \cos(t \cdot \omega_k)
+    \end{equation}
+    where $\omega_k$ are frequencies forming a geometric progression. This maps the scalar $t$ to a high-dimensional vector.
+    \item \textbf{Hidden Layers}: Three hidden layers with 64 units each and SiLU (Sigmoid Linear Unit) activations.
+    \item \textbf{Output}: A 2D vector representing the velocity at $(x, t)$.
+\end{itemize}
+
+\subsection{Training Algorithm}
+The training procedure follows the OT-CFM objective directly:
+\begin{enumerate}
+    \item Sample a batch of data $x_1 \sim q(x_1)$.
+    \item Sample a batch of noise $x_0 \sim \mathcal{N}(0, I)$.
+    \item Sample time steps $t \sim \mathcal{U}[0, 1]$.
+    \item Compute the interpolant $x_t = (1-t)x_0 + t x_1$.
+    \item Compute the target vector $u_t = x_1 - x_0$.
+    \item Predict the vector field $\hat{v} = \text{Model}(x_t, t)$.
+    \item Minimize the Mean Squared Error (MSE) $\| \hat{v} - u_t \|^2$ using the Adam optimizer.
+\end{enumerate}
+We trained the model for 1000 epochs with a batch size of 128 and a learning rate of $10^{-3}$.
+
+\subsection{Sampling / Inference}
+To generate new samples after training, we solve the learned ODE starting from noise:
+$$ \frac{dx}{dt} = v_t(x), \quad x(0) \sim \mathcal{N}(0, I) $$
+We utilized the \textbf{Euler method} for numerical integration. Since the target trajectories are straight lines (thanks to the OT formulation), even low-order solvers like Euler are often sufficient. We discretized the interval $[0, 1]$ into 1000 steps for high-precision validation, though fewer steps (e.g., 10-20) are often sufficient for constructing decent samples in OT-FM.
+
+\section{Experiments and Results}
+\label{sec:results}
+
+We evaluated our implementation on the 2D Checkerboard dataset.
+
+\subsection{Training Loss Analysis}
+The model was trained for 1000 epochs. The Mean Squared Error (MSE) loss, which represents the discrepancy between the predicted vector field and the target OT field, decreased rapidly in the first 100 epochs and stabilized around a value of 1.25 - 1.30.
+The loss did not converge to zero, which is expected. The target vector field $u_t(x | x_1) = x_1 - x_0$ is highly stochastic because $x_1$ and $x_0$ are random variables. The network learns the \textit{expected} vector field, effectively averaging over the possible target directions for a given $(x, t)$ pair.
+
+\subsection{Qualitative Results}
+Figure \ref{fig:checkerboard} displays the ground truth data distribution. We observed that the generated samples faithfully reconstructed the checkerboard pattern. The distinct modes (squares) were well-separated, and the boundaries were sharp, indicating that the flow successfully learned the discontinuous density.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\textwidth]{../slides/imgs/checkerboard_data.png}
+    \caption{Ground truth 2D Checkerboard distribution.}
+    \label{fig:checkerboard}
+\end{figure}
+
+The Optimal Transport paths played a crucial role here. During inference, particles started from a standard Gaussian and moved in nearly straight lines towards the target modes. This straight-line behavior reduces the discretization error of the Euler solver, allowing for high-quality samples even with a modest number of steps.
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Comparison with Standard CNFs}
+The simulation-free nature of Flow Matching proved to be a significant advantage. Training was stable and fast, avoiding the numerical instabilities often associated with backpropagating through ODE solvers (adjoint method). The "matching" objective provides a strong, direct supervision signal to the network at all time steps $t$.
+
+\subsection{OT vs. Diffusion Paths}
+While we focused on Optimal Transport paths, the framework is general. Diffusion Conditional Flow Matching (variance preserving paths) would result in curved trajectories similar to those in Diffusion Probabilistic Models (DDPMs). The OT paths, by minimizing transport cost, inherently prefer straight trajectories. This geometric property is the key reason why FM often outperforms diffusion models in terms of sampling efficiency (requiring fewer function evaluations).
+
+\subsection{Limitations}
+One limitation is the cost of evaluating the neural network in high dimensions if the architecture is very large. However, the vector field regression task is typically easier than score matching (denoising), potentially allowing for smaller networks. Additionally, while OT paths are straight in the conditional case, the marginal vector field can still be complex, requiring the neural network to potentially learn sharp transitions in vector directions.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this report, we have presented a detailed study of Flow Matching, implementing the Optimal Transport Conditional Flow Matching (OT-CFM) variant. We derived the theoretical equivalence that allows training on tractable conditional paths to learn the intractable marginal flow. Our experiments on the 2D Checkerboard dataset demonstrated that the method is both efficient and effective, capable of learning complex, multi-modal distributions with simulation-free training.
+
+Flow Matching represents a unification of discrete flows, continuous flows, and diffusion models. By adopting the Optimal Transport perspective, it provides arguably the most principled and efficient way to train continuous-time generative models to date. Future work includes scaling this implementation to high-dimensional image datasets like CIFAR-10 and exploring different path interpolants.
+
+\begin{thebibliography}{9}
+\bibitem{lipman2023}
+Lipman, Y., Chen, R. T., Ben-Hamu, H., Nickel, M., \& Le, M. (2023). Flow Matching for Generative Modeling. \textit{arXiv preprint arXiv:2210.02747}.
+
+\bibitem{chen2018}
+Chen, R. T., Rubanova, Y., Bettencourt, J., \& Duvenaud, D. K. (2018). Neural ordinary differential equations. \textit{Advances in neural information processing systems}, 31.
+
+\bibitem{dinh2016}
+Dinh, L., Sohl-Dickstein, J., \& Bengio, S. (2016). Density estimation using Real NVP. \textit{arXiv preprint arXiv:1605.08803}.
+\end{thebibliography}
+
+\end{document}
