@@ -1,5 +1,0 @@
-models
-scripts
-solver
-train
-utils
