@@ -430,7 +430,7 @@ This visual comparison empirically validates the theoretical advantages discusse
 The simulation-free nature of Flow Matching proved to be a significant advantage. Training was stable and fast, avoiding the numerical instabilities often associated with backpropagating through ODE solvers (adjoint method). The objective provides a strong, direct supervision signal to the network at all time steps $t$.
 
 \subsection{OT vs. Diffusion Paths}
-While we focused on Optimal Transport paths, the framework is general. Diffusion Conditional Flow Matching (variance preserving paths) would result in curved trajectories similar to those in Diffusion Probabilistic Models (DDPMs). The OT paths, by minimizing transport cost, inherently prefer straight trajectories. This geometric property is the key reason why FM often outperforms diffusion models in terms of sampling efficiency.
+While we focused on Optimal Transport paths, the framework is general. Diffusion Conditional Flow Matching (variance preserving paths) would result in curved trajectories similar to those in Diffusion Probabilistic Models \cite{ho2020denoisingdiffusionprobabilisticmodels} (DDPMs). The OT paths, by minimizing transport cost, inherently prefer straight trajectories. This geometric property is the key reason why FM often outperforms diffusion models in terms of sampling efficiency.
 
 \subsection{Limitations and Future Work}
 The Flow Matching paradigm presents certain limitations:
@@ -455,5 +455,5 @@ In summary, Flow Matching represents a efficient method for training continuous-
 
 \newpage
 \bibliographystyle{plain}
-\bibliography{bib}
+\bibliography{references}
 \end{document}

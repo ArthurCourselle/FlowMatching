@@ -10,3 +10,6 @@ __pycache__
 *.pdf
 *.snm
 *.toc
+checkpoints
+*.bbl
+*.blg

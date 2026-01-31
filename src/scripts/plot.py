@@ -51,7 +51,6 @@ def main():
 
     if args.data == "2d":
         model = MLP(input_dim=2, hidden_dim=64, time_dim=32).to(device)
-        # model_name = f"model_2d_{args.subtype}.pt"
         dim = 2
     else:
         if args.data == "MNIST":
@@ -75,7 +74,6 @@ def main():
             num_heads=4,
             num_classes=10,
         ).to(device)
-        # model_name = f"model_{args.data}_500ep.pt"
 
     checkpoint_path = os.path.join("./checkpoints", args.model_path)
     try:
@@ -90,7 +88,7 @@ def main():
         return
 
     print("Generating samples...")
-    steps = 1000
+    steps = 100
     # For images, we don't need too many samples to visualize, but for 2D density we do.
     n_samples = args.n_samples
     if args.data != "2d":
